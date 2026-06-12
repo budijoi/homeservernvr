@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniBlog</title>
+<style>
+:root { --bg: #f0f2f5; --bg-card: #fff; --text: #1a1a2e; --text-secondary: #555; --text-muted: #888; --nav-bg: #1a1a2e; --nav-text: #fff; --accent: #e94560; --accent-hover: #d63851; --secondary: #16213e; --secondary-hover: #0f3460; --border: #e0e0e0; --shadow: rgba(0,0,0,.08); --overlay: rgba(0,0,0,.5); --toast-bg: #1a1a2e; --toast-text: #fff; --code-bg: #f4f4f4; --blockquote-border: #e94560; --blockquote-bg: #fdf2f4; }
+[data-theme="dark"] { --bg: #121212; --bg-card: #1e1e1e; --text: #e0e0e0; --text-secondary: #bbb; --text-muted: #888; --nav-bg: #0a0a0a; --nav-text: #e0e0e0; --accent: #e94560; --accent-hover: #ff6b81; --secondary: #2a2a2a; --secondary-hover: #3a3a3a; --border: #333; --shadow: rgba(0,0,0,.3); --overlay: rgba(0,0,0,.7); --toast-bg: #333; --toast-text: #fff; --code-bg: #2d2d2d; --blockquote-border: #e94560; --blockquote-bg: #2a1a1e; }
+[data-theme="sepia"] { --bg: #fbf3e8; --bg-card: #fff8f0; --text: #5b4636; --text-secondary: #7a6a5a; --text-muted: #a09080; --nav-bg: #5b4636; --nav-text: #fff; --accent: #c0392b; --accent-hover: #e74c3c; --secondary: #8b7355; --secondary-hover: #6b5b45; --border: #e8ddd0; --shadow: rgba(91,70,54,.1); --overlay: rgba(91,70,54,.5); --toast-bg: #5b4636; --toast-text: #fff; --code-bg: #f5efe6; --blockquote-border: #c0392b; --blockquote-bg: #fdf0ea; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .3s, color .3s; }
+nav { background: var(--nav-bg); padding: .8rem 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; transition: background .3s; }
+nav h1 { color: var(--nav-text); font-size: 1.5rem; cursor: pointer; }
+nav h1 span { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.nav-right a, .nav-right button { color: var(--nav-text); text-decoration: none; padding: .5rem 1rem; border-radius: 6px; font-size: .85rem; transition: .2s; border: none; background: none; cursor: pointer; font-family: inherit; }
+.nav-right a:hover, .nav-right button:hover { background: var(--accent); }
+.theme-btn { font-size: 1.1rem !important; padding: .5rem .7rem !important; line-height: 1; }
+.btn { display: inline-block; padding: .6rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-size: .9rem; font-weight: 600; transition: .2s; text-decoration: none; font-family: inherit; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--secondary); color: #fff; }
+.btn-secondary:hover { background: var(--secondary-hover); }
+.btn-danger { background: #dc3545; color: #fff; }
+.btn-danger:hover { background: #c82333; }
+.btn-sm { padding: .35rem .8rem; font-size: .8rem; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+.page { display: none; }
+.page.active { display: block; }
+.card { background: var(--bg-card); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px var(--shadow); transition: background .3s, box-shadow .3s; }
+.card h2 { margin-bottom: .5rem; font-size: 1.3rem; }
+.card .meta { font-size: .8rem; color: var(--text-muted); margin-bottom: .8rem; }
+.card .excerpt { color: var(--text-secondary); line-height: 1.6; font-size: .95rem; }
+.card-actions { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
+.card-actions .btn { font-size: .8rem; padding: .35rem .8rem; }
+
+.post-full h1 { margin-bottom: .5rem; font-size: 1.6rem; }
+.post-full .meta { font-size: .85rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+.post-full .content { line-height: 1.8; font-size: 1.05rem; color: var(--text); }
+.post-full .content p { margin-bottom: 1rem; }
+.post-full .content pre { background: var(--code-bg); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .9rem; margin-bottom: 1rem; border: 1px solid var(--border); position: relative; }
+.copy-code-btn { position: absolute; top: .4rem; right: .4rem; background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: .2rem .6rem; font-size: .75rem; cursor: pointer; opacity: 0; transition: .2s; font-family: inherit; }
+.post-full .content pre:hover .copy-code-btn { opacity: 1; }
+.post-full .content code { background: var(--code-bg); padding: .15rem .4rem; border-radius: 4px; font-size: .9em; }
+.post-full .content pre code { background: none; padding: 0; }
+.post-full .content blockquote { border-left: 4px solid var(--blockquote-border); background: var(--blockquote-bg); padding: .8rem 1.2rem; margin-bottom: 1rem; border-radius: 0 6px 6px 0; font-style: italic; }
+.post-full .content ul, .post-full .content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+.post-full .content li { margin-bottom: .3rem; }
+.post-full .content h1, .post-full .content h2, .post-full .content h3, .post-full .content h4 { margin: 1.2rem 0 .5rem; }
+.post-full .content img { max-width: 100%; border-radius: 6px; margin-bottom: 1rem; }
+.post-full .content a { color: var(--accent); }
+
+.empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+.empty p { font-size: 1.1rem; margin-bottom: 1rem; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: var(--overlay); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--bg-card); border-radius: 12px; padding: 2rem; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; transition: background .3s; }
+.modal h2 { margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: .4rem; font-size: .9rem; }
+.form-group input, .form-group textarea { width: 100%; padding: .7rem; border: 2px solid var(--border); border-radius: 6px; font-size: .95rem; font-family: inherit; transition: .2s; background: var(--bg-card); color: var(--text); }
+.form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+.form-actions { display: flex; gap: .8rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
+
+.login-box { max-width: 360px; margin: 3rem auto; text-align: center; }
+.login-box h2 { margin-bottom: 1rem; }
+.login-box p { color: var(--text-muted); margin-bottom: 1.5rem; }
+.login-box input { width: 100%; padding: .8rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1.1rem; text-align: center; letter-spacing: 4px; margin-bottom: 1rem; background: var(--bg-card); color: var(--text); }
+.login-box input:focus { outline: none; border-color: var(--accent); }
+.error-msg { color: #dc3545; font-size: .85rem; margin-top: .5rem; display: none; }
+.error-msg.show { display: block; }
+
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--toast-bg); color: var(--toast-text); padding: .8rem 1.5rem; border-radius: 8px; font-size: .9rem; box-shadow: 0 4px 12px rgba(0,0,0,.2); transform: translateY(100px); opacity: 0; transition: .3s; z-index: 2000; }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+.read-more { color: var(--accent); font-weight: 600; cursor: pointer; }
+.read-more:hover { text-decoration: underline; }
+
+footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: .85rem; }
+.visitor-count { display: inline-block; background: var(--accent); color: #fff; padding: .15rem .6rem; border-radius: 20px; font-size: .75rem; margin-left: .3rem; }
+
+/* EDITOR TOOLBAR */
+.editor-toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: .5rem; border: 2px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; background: var(--bg); }
+.editor-toolbar button { background: none; border: none; padding: .4rem .7rem; border-radius: 4px; cursor: pointer; font-size: .85rem; color: var(--text); font-weight: 600; transition: .2s; font-family: inherit; }
+.editor-toolbar button:hover { background: var(--accent); color: #fff; }
+.editor-toolbar .sep { width: 1px; background: var(--border); margin: .2rem .3rem; }
+#postContent { border: 2px solid var(--border); border-radius: 0 0 6px 6px; padding: .8rem; min-height: 250px; max-height: 400px; overflow-y: auto; outline: none; font-size: .95rem; line-height: 1.6; background: var(--bg-card); color: var(--text); font-family: inherit; }
+#postContent:focus { border-color: var(--accent); }
+#postContent p { margin-bottom: .5rem; }
+#postContent pre { background: var(--code-bg); padding: .8rem; border-radius: 4px; overflow-x: auto; margin: .5rem 0; }
+#postContent code { background: var(--code-bg); padding: .15rem .3rem; border-radius: 3px; }
+#postContent blockquote { border-left: 3px solid var(--accent); padding-left: 1rem; margin: .5rem 0; color: var(--text-secondary); font-style: italic; }
+#postContent ul, #postContent ol { padding-left: 1.5rem; margin: .5rem 0; }
+
+/* LIKES & SHARE */
+.post-actions { display: flex; gap: .5rem; margin: 1.5rem 0; flex-wrap: wrap; }
+.post-actions button { display: flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 6px; border: 2px solid var(--border); background: var(--bg-card); color: var(--text); cursor: pointer; font-size: .9rem; transition: .2s; font-family: inherit; }
+.post-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.post-actions button.liked { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* COMMENTS */
+.comment-section { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+.comment-section h3 { margin-bottom: 1rem; font-size: 1.1rem; }
+.comment-input { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.comment-input input { flex: 1; min-width: 150px; padding: .6rem; border: 2px solid var(--border); border-radius: 6px; font-size: .9rem; background: var(--bg-card); color: var(--text); font-family: inherit; }
+.comment-input input:focus { outline: none; border-color: var(--accent); }
+.comment { padding: .8rem 0; border-bottom: 1px solid var(--border); }
+.comment:last-child { border-bottom: none; }
+.comment .name { font-weight: 600; font-size: .9rem; }
+.comment .time { font-size: .75rem; color: var(--text-muted); margin-left: .5rem; }
+.comment .text { color: var(--text-secondary); font-size: .9rem; margin-top: .2rem; }
+
+/* COUNTER BADGE */
+.counter-badge { display: inline-flex; align-items: center; gap: .3rem; font-size: .75rem; color: var(--text-muted); margin-left: 1rem; }
+
+@media (max-width:600px) {
+  .container { padding: 1rem; }
+  nav { padding: .6rem 1rem; }
+  .modal { padding: 1.2rem; }
+  .editor-toolbar button { padding: .3rem .5rem; font-size: .8rem; }
+}
+</style>
+</head>
+<body data-theme="light">
+
+<nav>
+  <h1 onclick="showPage('home')">Mini<span>Blog</span></h1>
+  <div class="nav-right">
+    <a href="#" onclick="showPage('home')">Beranda</a>
+    <button class="theme-btn" onclick="cycleTheme()" title="Ganti tema">🎨</button>
+    <button onclick="showPage('admin')" title="Panel Admin" style="color:var(--nav-text);background:none;border:none;cursor:pointer;font-size:1.1rem;padding:.4rem .5rem;border-radius:6px;transition:.2s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='none'">🔒</button>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- HOME -->
+<div id="pageHome" class="page active">
+  <h2 style="margin-bottom:1rem;">Postingan Terbaru</h2>
+  <div id="postList"></div>
+</div>
+
+<!-- POST FULL -->
+<div id="pagePost" class="page">
+  <a href="#" onclick="showPage('home')" style="color:var(--accent);margin-bottom:1rem;display:inline-block;">&larr; Kembali</a>
+  <div id="postFullContent" class="post-full card"></div>
+  <div id="postComments" class="card comment-section"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="pageAdmin" class="page">
+  <div id="adminPanel"></div>
+</div>
+
+</div>
+
+<footer>
+  <div style="margin-bottom:1rem;display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem 1rem;font-size:.9rem;">
+    <a href="mailto:admin@budijoi.my.id" style="color:var(--accent);text-decoration:none;" target="_blank">📧 Email</a>
+    <a href="https://facebook.com/budijoiBBJ" style="color:var(--accent);text-decoration:none;" target="_blank">📘 Facebook</a>
+    <a href="https://instagram.com/budijoi_eco" style="color:var(--accent);text-decoration:none;" target="_blank">📸 Instagram</a>
+    <a href="https://threads.net/@budijoi_eco" style="color:var(--accent);text-decoration:none;" target="_blank">🧵 Thread</a>
+    <a href="https://wa.me/6288224553181" style="color:var(--accent);text-decoration:none;" target="_blank">💬 WhatsApp</a>
+  </div>
+  <span id="footerVisitor">👁️ Pengunjung: <span class="visitor-count" id="visitorCount">0</span></span>
+  &nbsp;&mdash;&nbsp; &copy; 2026 MiniBlog
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Tambah Postingan</h2>
+    <div class="form-group">
+      <label for="postTitle">Judul</label>
+      <input type="text" id="postTitle" placeholder="Judul postingan...">
+    </div>
+    <div class="form-group">
+      <label>Konten</label>
+      <div class="editor-toolbar">
+        <button onclick="execCmd('bold')"><b>B</b></button>
+        <button onclick="execCmd('italic')"><i>I</i></button>
+        <button onclick="execCmd('underline')"><u>U</u></button>
+        <button onclick="execCmd('strikeThrough')"><s>S</s></button>
+        <span class="sep"></span>
+        <button onclick="execCmd('formatBlock','h2')">H2</button>
+        <button onclick="execCmd('formatBlock','h3')">H3</button>
+        <span class="sep"></span>
+        <button onclick="execCmd('insertUnorderedList')">• List</button>
+        <button onclick="execCmd('insertOrderedList')">1. List</button>
+        <span class="sep"></span>
+        <button onclick="execCmd('formatBlock','pre')">Code</button>
+        <button onclick="execCmd('formatBlock','blockquote')">Quote</button>
+        <span class="sep"></span>
+        <button onclick="execCmd('removeFormat')">Clear</button>
+      </div>
+      <div id="postContent" contenteditable="true"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="savePost()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// === STATE ===
+let posts = JSON.parse(localStorage.getItem('miniblog_posts') || '[]');
+let comments = JSON.parse(localStorage.getItem('miniblog_comments') || '{}');
+let likes = JSON.parse(localStorage.getItem('miniblog_likes') || '{}');
+let editingId = null;
+let currentViewPostId = null;
+let isLoggedIn = sessionStorage.getItem('miniblog_auth') === 'true';
+
+// === THEME ===
+const themes = ['light', 'dark', 'sepia'];
+let themeIndex = parseInt(localStorage.getItem('miniblog_theme') || '0');
+document.body.dataset.theme = themes[themeIndex];
+
+function cycleTheme() {
+  themeIndex = (themeIndex + 1) % themes.length;
+  document.body.dataset.theme = themes[themeIndex];
+  localStorage.setItem('miniblog_theme', themeIndex.toString());
+}
+
+// === VISITOR COUNTER ===
+let visitorCount = parseInt(localStorage.getItem('miniblog_visitors') || '0');
+if (!sessionStorage.getItem('miniblog_visited')) {
+  visitorCount++;
+  localStorage.setItem('miniblog_visitors', visitorCount.toString());
+  sessionStorage.setItem('miniblog_visited', 'true');
+}
+document.getElementById('visitorCount').textContent = visitorCount;
+
+// === DATA ===
+function saveData() {
+  localStorage.setItem('miniblog_posts', JSON.stringify(posts));
+  localStorage.setItem('miniblog_comments', JSON.stringify(comments));
+  localStorage.setItem('miniblog_likes', JSON.stringify(likes));
+}
+
+function formatDate(d) {
+  const date = new Date(d);
+  return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function truncate(text, len) {
+  const plain = text.replace(/<[^>]*>/g, '');
+  if (plain.length <= len) return text;
+  return text.substring(0, len).replace(/\s+\S*$/, '') + '...';
+}
+
+function stripHtml(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return d.textContent || '';
+}
+
+// === NAV ===
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1));
+  if (el) el.classList.add('active');
+  if (page === 'home') renderHome();
+  if (page === 'admin') renderAdmin();
+}
+
+// === HOME ===
+function renderHome() {
+  const container = document.getElementById('postList');
+  if (!posts.length) {
+    container.innerHTML = '<div class="empty"><p>Belum ada postingan.</p><p>Silakan login ke Panel Admin untuk membuat postingan.</p></div>';
+    return;
+  }
+  const html = posts.slice().reverse().map(p => {
+    const excerpt = stripHtml(p.content).substring(0, 200).replace(/\s+\S*$/, '');
+    return `<div class="card">
+      <h2>${p.title}</h2>
+      <div class="meta">${formatDate(p.date)}</div>
+      <div class="excerpt">${escHtml(excerpt)}</div>
+      <p><span class="read-more" onclick="showPost('${p.id}')">Baca selengkapnya &rarr;</span></p>
+    </div>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+// === POST FULL ===
+function showPost(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) { showPage('home'); return; }
+  currentViewPostId = id;
+  const likeCount = likes[id] || 0;
+  const userLiked = localStorage.getItem('miniblog_userliked_' + id) === 'true';
+  let contentHtml = post.content;
+  const temp = document.createElement('div');
+  temp.innerHTML = contentHtml;
+  temp.querySelectorAll('pre').forEach(pre => {
+    if (!pre.querySelector('.copy-code-btn')) {
+      const btn = document.createElement('button');
+      btn.className = 'copy-code-btn';
+      btn.textContent = '📋 Salin';
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        const code = pre.textContent;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(code).then(() => { btn.textContent = '✅ Disalin!'; setTimeout(() => { btn.textContent = '📋 Salin'; }, 2000); });
+        } else {
+          const ta = document.createElement('textarea'); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          btn.textContent = '✅ Disalin!'; setTimeout(() => { btn.textContent = '📋 Salin'; }, 2000);
+        }
+      };
+      pre.appendChild(btn);
+    }
+  });
+  contentHtml = temp.innerHTML;
+  document.getElementById('postFullContent').innerHTML = `
+    <h1>${post.title}</h1>
+    <div class="meta">${formatDate(post.date)}
+      <span class="counter-badge">❤️ <span id="likeCountDisplay">${likeCount}</span></span>
+      <span class="counter-badge">💬 <span id="commentCountDisplay">${(comments[id]||[]).length}</span></span>
+    </div>
+    <div class="content">${contentHtml}</div>
+    <div class="post-actions">
+      <button id="likeBtn" onclick="toggleLike('${id}')" class="${userLiked?'liked':''}">${userLiked?'❤️':'🤍'} <span id="likeBtnText">${userLiked?'Suka':'Suka'}</span> <span id="likeCount">${likeCount}</span></button>
+      <button onclick="sharePost('${id}')">📤 Bagikan</button>
+    </div>
+  `;
+  renderComments(id);
+  showPage('post');
+}
+
+function toggleLike(id) {
+  const liked = localStorage.getItem('miniblog_userliked_' + id) === 'true';
+  if (liked) {
+    likes[id] = (likes[id] || 1) - 1;
+    localStorage.setItem('miniblog_userliked_' + id, 'false');
+  } else {
+    likes[id] = (likes[id] || 0) + 1;
+    localStorage.setItem('miniblog_userliked_' + id, 'true');
+  }
+  saveData();
+  showPost(id);
+}
+
+function sharePost(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  const text = `${post.title}\n\n${stripHtml(post.content).substring(0,100)}...\n\nDibagikan dari MiniBlog`;
+  if (navigator.share) {
+    navigator.share({ title: post.title, text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('Teks berhasil disalin!'));
+  } else {
+    showToast('Gunakan browser modern untuk fitur share.');
+  }
+}
+
+// === COMMENTS ===
+function renderComments(postId) {
+  const container = document.getElementById('postComments');
+  const postComments = comments[postId] || [];
+  container.innerHTML = `
+    <h3>💬 Komentar (${postComments.length})</h3>
+    <div class="comment-input">
+      <input type="text" id="commentName" placeholder="Nama Anda..." maxlength="30">
+      <input type="text" id="commentText" placeholder="Tulis komentar..." maxlength="500" onkeydown="if(event.key==='Enter')addComment('${postId}')">
+      <button class="btn btn-primary btn-sm" onclick="addComment('${postId}')">Kirim</button>
+    </div>
+    <div id="commentList">
+      ${postComments.length ? postComments.map(c => `
+        <div class="comment">
+          <span class="name">${escHtml(c.name)}</span>
+          <span class="time">${formatDate(c.date)}</span>
+          <div class="text">${escHtml(c.text)}</div>
+        </div>
+      `).join('') : '<p style="color:var(--text-muted);font-size:.9rem;">Belum ada komentar. Jadilah yang pertama!</p>'}
+    </div>
+  `;
+}
+
+function addComment(postId) {
+  const name = document.getElementById('commentName').value.trim() || 'Anonim';
+  const text = document.getElementById('commentText').value.trim();
+  if (!text) { showToast('Teks komentar tidak boleh kosong.'); return; }
+  if (!comments[postId]) comments[postId] = [];
+  comments[postId].push({ name, text, date: new Date().toISOString() });
+  saveData();
+  document.getElementById('commentText').value = '';
+  showPost(postId);
+}
+
+// === ADMIN ===
+function renderAdmin() {
+  const panel = document.getElementById('adminPanel');
+  if (!isLoggedIn) {
+    panel.innerHTML = `
+      <div class="login-box card">
+        <h2>Panel Admin</h2>
+        <p>Masukkan PIN untuk mengelola postingan.</p>
+        <input type="password" id="pinInput" placeholder="PIN" maxlength="6" onkeydown="if(event.key==='Enter')login()">
+        <button class="btn btn-primary" onclick="login()" style="width:100%;">Masuk</button>
+        <div class="error-msg" id="loginError">PIN salah. Coba lagi.</div>
+      </div>
+    `;
+    return;
+  }
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+      <h2>Kelola Postingan</h2>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="openModal()">+ Tambah Baru</button>
+        <button class="btn btn-secondary" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <div id="adminPostList"></div>
+  `;
+  renderAdminPosts();
+}
+
+function renderAdminPosts() {
+  const container = document.getElementById('adminPostList');
+  if (!container) return;
+  if (!posts.length) {
+    container.innerHTML = '<div class="empty"><p>Belum ada postingan. Klik "Tambah Baru" untuk membuatnya.</p></div>';
+    return;
+  }
+  const html = posts.slice().reverse().map(p => {
+    const excerpt = stripHtml(p.content).substring(0, 150).replace(/\s+\S*$/, '');
+    return `<div class="card">
+      <h2>${p.title}</h2>
+      <div class="meta">${formatDate(p.date)}</div>
+      <div class="excerpt">${escHtml(excerpt)}</div>
+      <div class="card-actions">
+        <button class="btn btn-primary btn-sm" onclick="editPost('${p.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePost('${p.id}')">Hapus</button>
+      </div>
+    </div>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+// === LOGIN ===
+function login() {
+  const pin = document.getElementById('pinInput').value;
+  if (pin === '170884') {
+    isLoggedIn = true;
+    sessionStorage.setItem('miniblog_auth', 'true');
+    renderAdmin();
+  } else {
+    document.getElementById('loginError').classList.add('show');
+  }
+}
+
+function logout() {
+  isLoggedIn = false;
+  sessionStorage.removeItem('miniblog_auth');
+  renderAdmin();
+}
+
+// === EDITOR ===
+function execCmd(cmd, val) {
+  document.getElementById('postContent').focus();
+  if (cmd === 'formatBlock' && val === 'pre') {
+    document.execCommand('formatBlock', false, 'pre');
+    return;
+  }
+  document.execCommand(cmd, false, val || null);
+}
+
+function getEditorHTML() {
+  const el = document.getElementById('postContent');
+  let html = el.innerHTML;
+  html = html.replace(/<div>/g, '<p>').replace(/<\/div>/g, '</p>');
+  html = html.replace(/<br>/g, '').replace(/<p>\s*<\/p>/g, '<p><br></p>');
+  return html;
+}
+
+function setEditorHTML(html) {
+  document.getElementById('postContent').innerHTML = html;
+}
+
+function clearEditor() {
+  document.getElementById('postContent').innerHTML = '';
+}
+
+// === MODAL ===
+function openModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Tambah Postingan';
+  document.getElementById('postTitle').value = '';
+  clearEditor();
+  document.getElementById('modalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('postTitle').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  editingId = null;
+}
+
+function editPost(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Postingan';
+  document.getElementById('postTitle').value = post.title;
+  setEditorHTML(post.content);
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function convertBacktickCode(html) {
+  return html.replace(/<p>```([\s\S]*?)```<\/p>/g, '<pre><code>$1</code></pre>');
+}
+
+function savePost() {
+  const title = document.getElementById('postTitle').value.trim();
+  let content = getEditorHTML().trim();
+  content = convertBacktickCode(content);
+  const plainText = stripHtml(content).trim();
+  if (!title) { showToast('Judul wajib diisi.'); return; }
+  if (!plainText) { showToast('Konten wajib diisi.'); return; }
+  if (editingId) {
+    const post = posts.find(p => p.id === editingId);
+    if (post) { post.title = title; post.content = content; }
+    showToast('Postingan berhasil diperbarui.');
+  } else {
+    posts.push({ id: Date.now().toString(), title, content, date: new Date().toISOString() });
+    comments[posts[posts.length-1].id] = [];
+    showToast('Postingan berhasil ditambahkan.');
+  }
+  saveData();
+  closeModal();
+  renderAdmin();
+}
+
+function deletePost(id) {
+  if (!confirm('Yakin ingin menghapus postingan ini beserta komentarnya?')) return;
+  posts = posts.filter(p => p.id !== id);
+  delete comments[id];
+  delete likes[id];
+  localStorage.removeItem('miniblog_userliked_' + id);
+  saveData();
+  renderAdmin();
+  showToast('Postingan berhasil dihapus.');
+}
+
+// === TOAST ===
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// === ESCAPE HTML ===
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// === CLOSE MODAL ON OVERLAY CLICK ===
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// === PASTE SANITIZE ===
+document.getElementById('postContent').addEventListener('paste', function(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  document.execCommand('insertText', false, text);
+});
+
+// === INIT ===
+renderHome();
+</script>
+</body>
+</html>
